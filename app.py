@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objs as go
 from openai import OpenAI
-
+from floating_ai import render_floating_ai
 # ----------------------------
 # 1. 页面配置
 # ----------------------------
@@ -92,9 +92,6 @@ with st.sidebar.expander("3. 故障诊断", expanded=(st.session_state.page in [
 if st.sidebar.button("4. 使用说明"):
     st.session_state.page = "4. 使用说明"
 
-# 主目录 5
-if st.sidebar.button("5. AI 助手"):
-    st.session_state.page = "5. AI 助手"
 
 # ----------------------------
 # 4. 页面分发
@@ -104,7 +101,7 @@ page = st.session_state.page
 if page == "1. 平台首页":
     st.title("深远海风电构网型控制监测平台")
     st.info("欢迎。本项目旨在研究深远海风电在弱网环境下的构网型控制策略稳定性。")
-    st.image("https://via.placeholder.com/1000x300.png?text=Platform+Overview", use_column_width=True)
+    st.image("https://via.placeholder.com/1000x300.png?text=Platform+Overview", use_container_width=True)
 
 # ============================
 # 2.1 实时监测 (根据你的截图修改)
@@ -285,62 +282,5 @@ elif page == "4. 使用说明":
         """, unsafe_allow_html=True)
 
 
-elif page == "5. AI 助手":
-    st.title("🤖 智能风电专家")
 
-    # 1. 初始化聊天历史
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-        st.session_state.messages.append({
-            "role": "system",
-            "content": "你是一位深远海风电构网型控制领域的资深专家。请用专业、简练的工程语言回答用户关于风机控制、故障诊断和系统拓扑的问题。"
-        })
-
-    # 2. 显示历史消息
-    for msg in st.session_state.messages:
-        if msg["role"] != "system":
-            with st.chat_message(msg["role"]):
-                st.markdown(msg["content"])
-
-    # 3. 处理用户输入
-    if prompt := st.chat_input("请输入您的问题（例如：构网型控制与跟网型有什么区别？）"):
-        
-        # 显示用户问题
-        with st.chat_message("user"):
-            st.markdown(prompt)
-        st.session_state.messages.append({"role": "user", "content": prompt})
-
-        # 4. 调用 AI 接口 (新增了错误捕获机制)
-        # 检查是否配置了 API Key
-        if "DEEPSEEK_API_KEY" in st.secrets:
-            api_key = st.secrets["DEEPSEEK_API_KEY"]
-            
-            # 建立客户端连接
-            client = OpenAI(
-                api_key=api_key,
-                base_url="https://api.deepseek.com"
-            )
-
-            with st.chat_message("assistant"):
-                try:
-                    # 尝试发送请求
-                    stream = client.chat.completions.create(
-                        model="deepseek-chat", 
-                        messages=[
-                            {"role": m["role"], "content": m["content"]}
-                            for m in st.session_state.messages
-                        ],
-                        stream=True,
-                    )
-                    # 尝试接收流式回复
-                    response = st.write_stream(stream)
-                    
-                    # 如果成功，记录回复
-                    st.session_state.messages.append({"role": "assistant", "content": response})
-
-                except Exception as e:
-                    # 🚨 关键：如果出错，直接把错误显示在网页上
-                    st.error(f"AI 响应中断，原因: {e}")
-                    st.caption("请检查：1. API Key 是否有余额？ 2. 网络是否通畅？")
-        else:
-            st.error("未检测到 API Key。请在 .streamlit/secrets.toml 中配置 DEEPSEEK_API_KEY。")
+render_floating_ai()
